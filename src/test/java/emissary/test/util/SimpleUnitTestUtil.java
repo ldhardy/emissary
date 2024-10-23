@@ -32,8 +32,7 @@ public class SimpleUnitTestUtil {
      * This helper method returns a set of entries, where each entry contains the file prefix as the key and the input
      * file's absolute path as the value.
      * <p>
-     * For example, if there were a directory <code>src/test/resources/package/FancyPantsPlaceTest/</code> and it
-     * contained
+     * For example, if there were a directory <code>src/test/resources/package/FancyPantsPlaceTest/</code> and it contained
      * <ul>
      * <li><code>candysequins.in</code></li>
      * <li><code>candysequins-expected.txt</code></li>
@@ -52,9 +51,9 @@ public class SimpleUnitTestUtil {
      * 
      * @param testClassName where the classloader should look in the classpath for files with the appropriate suffix.
      * @param inputFileSuffix the suffix for the files of interest. See {@link #INPUT_FILE_SUFFIX}
-     * @return a sorted set of entries for this test class where the key of each entry is the test file's short name
-     *         with no suffix and the value of each entry is the absolute path of the file. This set becomes useful
-     *         when used in combination with other methods in this utility class. See
+     * @return a sorted set of entries for this test class where the key of each entry is the test file's short name with no
+     *         suffix and the value of each entry is the absolute path of the file. This set becomes useful when used in
+     *         combination with other methods in this utility class. See
      *         {@link #getFilePrefixToAbsolutePathBySuffixMap(String, String)} and
      *         {@link #writeOutput(String, String, String, String)}
      * 
@@ -75,9 +74,9 @@ public class SimpleUnitTestUtil {
     }
 
     /**
-     * This is a utility to pass in a resource path string and return the CONTENT of the expected answer file. You'll
-     * need to specify which input file path portion to replace with which "expected" file path portion. This method
-     * will read the contents of that file and return the contents.
+     * This is a utility to pass in a resource path string and return the CONTENT of the expected answer file. You'll need
+     * to specify which input file path portion to replace with which "expected" file path portion. This method will read
+     * the contents of that file and return the contents.
      * 
      * @param filePath - the path, usually of the file containing the input data.
      * @param existingSuffix - the file suffix of the input file.
@@ -111,8 +110,8 @@ public class SimpleUnitTestUtil {
      * This helper method will help locate the expected output for a simple unit test.
      * 
      * Use this method in combination with the {@link #getFilePrefixToAbsolutePathBySuffixMap(String, String)} method to
-     * find the expected output for the input files. Feel free to use the static constant {@link #EXPECTED_FILE_SUFFIX}
-     * as a convention for the fileSuffix, but it is not required.
+     * find the expected output for the input files. Feel free to use the static constant {@link #EXPECTED_FILE_SUFFIX} as a
+     * convention for the fileSuffix, but it is not required.
      * 
      * @param className (e.g. 'FancyPantsPlaceTest')
      * @param filePrefix (e.g. 'candysequins')
@@ -136,17 +135,16 @@ public class SimpleUnitTestUtil {
 
 
     /**
-     * This is a utility for writing out files. Feel free to use the constant {@link #ACTUAL_FILE_SUFFIX} to write
-     * output during the test, but it is not required.
+     * This is a utility for writing out files. Feel free to use the constant {@link #ACTUAL_FILE_SUFFIX} to write output
+     * during the test, but it is not required.
      * 
      * @param outputDir - which directory to write the output file (e.g. 'target/my-unit-test/case1')
      * @param outputContent - what content to write to the file
      * @param filenamePrefix - the beginning part of the outputfile (e.g. 'example1')
      * @param fileSuffix - the ending part of hte output file (e.g. '-actual.out')
      *        <p>
-     *        With the given examples, a file would be written to
-     *        <code>target/my-unit-test/case1/example1-actual.out</code> containing the content provided in
-     *        <code>outputContent</code>
+     *        With the given examples, a file would be written to <code>target/my-unit-test/case1/example1-actual.out</code>
+     *        containing the content provided in <code>outputContent</code>
      *        </p>
      */
     public static void writeOutput(String outputDir, String outputContent, String filenamePrefix, String fileSuffix) {
@@ -168,10 +166,10 @@ public class SimpleUnitTestUtil {
     }
 
     /**
-     * This is a utility for retrieving files at a specific directory that have a specific suffix. It will not recurse
-     * into subdirectories. This is different than {@link #getSetOfFilesForClassWithGivenSuffix(Class, String)} in that
-     * class will find all resources for the given class on the classpath where this one will only search the given
-     * directory at one level.
+     * This is a utility for retrieving files at a specific directory that have a specific suffix. It will not recurse into
+     * subdirectories. This is different than {@link #getSetOfFilesForClassWithGivenSuffix(Class, String)} in that class
+     * will find all resources for the given class on the classpath where this one will only search the given directory at
+     * one level.
      * 
      * @param path - the directory in which to locate files.
      * @param suffix - the suffix of files of interest. See {@link #INPUT_FILE_SUFFIX}, {@link #EXPECTED_FILE_SUFFIX},
@@ -184,8 +182,7 @@ public class SimpleUnitTestUtil {
      *         <li><code>actualOutput2.txt<code></li>
      *         <li><code>actualOutput2.pdf<code></li>
      *         </ul>
-     *         You call <code>SimpleUnitTestUtil.getFileMap("target/myTest", ".txt")</code> would return a map that
-     *         contains
+     *         You call <code>SimpleUnitTestUtil.getFileMap("target/myTest", ".txt")</code> would return a map that contains
      *         <ul>
      *         <li><code>actualOutput1, /home/dir/src/project/core/target/myTest/actualOutput1.txt</code></li>
      *         <li><code>actualOutput2, /home/dir/src/project/core/target/myTest/actualOutput2.txt</code></li>
