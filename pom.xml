@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>gov.nsa.emissary</groupId>
   <artifactId>emissary</artifactId>
-  <version>8.17.0-SNAPSHOT</version>
+  <version>8.16.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Emissary</name>
   <description>Distributed P2P Data-driven Workflow Framework</description>
@@ -56,7 +56,7 @@
     <dep.commons-compress.version>1.26.0</dep.commons-compress.version>
     <dep.commons-exec.version>1.3</dep.commons-exec.version>
     <dep.commons-io.version>2.15.1</dep.commons-io.version>
-    <dep.commons-lang.version>3.17.0</dep.commons-lang.version>
+    <dep.commons-lang.version>3.13.0</dep.commons-lang.version>
     <dep.commons-pool.version>2.11.1</dep.commons-pool.version>
     <dep.dropwizard.metrics.version>4.2.25</dep.dropwizard.metrics.version>
     <dep.errorprone.version>2.23.0</dep.errorprone.version>
@@ -64,6 +64,7 @@
     <dep.guava.version>32.1.2-jre</dep.guava.version>
     <dep.httpclient.version>5.2.1</dep.httpclient.version>
     <dep.httpcore.version>5.2.1</dep.httpcore.version>
+    <dep.icu4j.version>73.2</dep.icu4j.version>
     <dep.jackson.version>2.15.2</dep.jackson.version>
     <dep.jakarta.xml.bind-api.version>3.0.1</dep.jakarta.xml.bind-api.version>
     <dep.janino.version>3.1.12</dep.janino.version>
@@ -116,7 +117,8 @@
     <plugin.maven-scm-publish.version>3.2.1</plugin.maven-scm-publish.version>
     <plugin.maven-site.version>3.12.1</plugin.maven-site.version>
     <plugin.maven-source.version>3.2.1</plugin.maven-source.version>
-    <!-- seems to have an impact with java 11 integration, update with caution -->
+    <!-- seems to have an impact with java 11 integration, update with
+		caution -->
     <plugin.maven-surefire.version>3.1.0</plugin.maven-surefire.version>
     <plugin.nexus-staging-maven.version>1.6.7</plugin.nexus-staging-maven.version>
     <plugin.sonar-maven.version>3.9.1.2184</plugin.sonar-maven.version>
@@ -124,19 +126,24 @@
     <plugin.versions-maven.version>2.17.1</plugin.versions-maven.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <!-- The following properties are used to ignore certain SonarQube rules. -->
+    <!-- The following properties are used to ignore certain SonarQube
+		rules. -->
     <sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
     <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
     <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S6212</sonar.issue.ignore.multicriteria.e1.ruleKey>
-    <!-- With Java 8 and the latest version of surefire, user.timezone is not read correctly.  Reevaluate one day.
+    <!-- With Java 8 and the latest version of surefire, user.timezone is
+		not read correctly.  Reevaluate one day.
          See https://issues.apache.org/jira/browse/SUREFIRE-1176 or
-         http://stackoverflow.com/questions/19121928/java-system-getproperty-user-timezone-does-not-work
+		http://stackoverflow.com/questions/19121928/java-system-getproperty-user-timezone-does-not-work
 
-         The COMPAT locale provider is used because the date formatter parsing has changed significantly
+         The COMPAT locale provider is used because the date formatter parsing has
+		changed significantly
          when using the CLDR locale provider, which is the default in JDK11.
-         https://www.oracle.com/technetwork/java/javase/documentation/java11locales-5069639.html
+		https://www.oracle.com/technetwork/java/javase/documentation/java11locales-5069639.html
       -->
-    <surefire.argline>@{argLine} -Xmx1024m -Xms256m -Djava.locale.providers=COMPAT -Djava.net.preferIPv4Stack=true -Duser.timezone=GMT -Djava.awt.headless=true</surefire.argline>
+    <surefire.argline>@{argLine} -Xmx1024m -Xms256m
+			-Djava.locale.providers=COMPAT -Djava.net.preferIPv4Stack=true
+			-Duser.timezone=GMT -Djava.awt.headless=true</surefire.argline>
     <surefire.forkCount>.5C</surefire.forkCount>
   </properties>
   <dependencyManagement>
@@ -524,6 +531,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.ibm.icu</groupId>
+      <artifactId>icu4j</artifactId>
+      <version>${dep.icu4j.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.glassfish.jersey.test-framework.providers</groupId>
       <artifactId>jersey-test-framework-provider-jetty</artifactId>
       <scope>test</scope>
@@ -725,9 +738,12 @@
             <!-- this combination of these two configurations
               (failOnViolation=true and violationSeverity=error) means
               any checks with severity=error will fail the build -->
-            <!-- TODO enforce more checkstyle categories as the	build gets cleaned up -->
-            <!-- As you fix checkstyle warning categories, change the severity of that category
-              to "error" so it will fail the build if new violations of that category get introduced. -->
+            <!-- TODO enforce more checkstyle categories as the
+						build gets cleaned up -->
+            <!-- As you fix checkstyle warning categories, change
+						the severity of that category
+              to "error" so it will fail the build if new violations of that category get
+						introduced. -->
             <failOnViolation>true</failOnViolation>
             <violationSeverity>error</violationSeverity>
             <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -1432,7 +1448,8 @@
       </build>
     </profile>
     <profile>
-      <!-- on by default, but disable with '-P !autoformat' or '-DskipFormat' -->
+      <!-- on by default, but disable with '-P !autoformat' or
+			'-DskipFormat' -->
       <id>autoformat</id>
       <activation>
         <property>
@@ -1457,12 +1474,11 @@
       </build>
     </profile>
     <profile>
-      <!-- on by default, but disable with '-P !errorProne' or '-DskipErrorProne' -->
       <id>errorProne</id>
       <activation>
         <jdk>[11,)</jdk>
         <property>
-          <name>!skipErrorProne</name>
+          <name>errorProne</name>
         </property>
       </activation>
       <build>
@@ -1494,23 +1510,24 @@
                 <!--arg>-Xlint:all</arg-->
                 <arg>-XDcompilePolicy=simple</arg>
                 <arg>-Xplugin:ErrorProne \
-                  -XepAllDisabledChecksAsWarnings \
-                  -XepAllSuggestionsAsWarnings \
-                  -XepDisableWarningsInGeneratedCode \
-                  -Xep:AndroidJdkLibsChecker:OFF \
-                  -Xep:BooleanParameter:OFF \
-                  -Xep:CanIgnoreReturnValueSuggester:OFF \
-                  -Xep:DefaultCharset:OFF \
-                  -Xep:InconsistentOverloads:OFF \
-                  -Xep:InlineMeSuggester:OFF \
-                  -Xep:InlineTrivialConstant:OFF \
-                  -Xep:Java7ApiChecker:OFF \
-                  -Xep:Java8ApiChecker:OFF \
-                  -Xep:StringSplitter:OFF \
-                  -Xep:UnnecessaryFinal:OFF \
-                  -Xep:Var:OFF \
-                  -Xep:Varifier:OFF \
-                  -Xep:YodaCondition:OFF</arg>
+									-XepAllDisabledChecksAsWarnings \
+									-XepAllErrorsAsWarnings \
+									-XepAllSuggestionsAsWarnings \
+									-XepDisableWarningsInGeneratedCode \
+									-Xep:AndroidJdkLibsChecker:OFF \
+									-Xep:BooleanParameter:OFF \
+									-Xep:CanIgnoreReturnValueSuggester:OFF \
+									-Xep:DefaultCharset:OFF \
+									-Xep:InconsistentOverloads:OFF \
+									-Xep:InlineMeSuggester:OFF \
+									-Xep:InlineTrivialConstant:OFF \
+									-Xep:Java7ApiChecker:OFF \
+									-Xep:Java8ApiChecker:OFF \
+									-Xep:StringSplitter:OFF \
+									-Xep:UnnecessaryFinal:OFF \
+									-Xep:Var:OFF \
+									-Xep:Varifier:OFF \
+									-Xep:YodaCondition:OFF</arg>
               </compilerArgs>
               <annotationProcessorPaths>
                 <path>
@@ -1527,7 +1544,8 @@
     <profile>
       <id>eclipse</id>
       <activation>
-        <!-- when eclipse runs a build, this system property is already present -->
+        <!-- when eclipse runs a build, this system property is already
+				present -->
         <property>
           <name>m2e.version</name>
         </property>
@@ -1537,7 +1555,8 @@
         <maven.compiler.release>11</maven.compiler.release>
       </properties>
       <build>
-        <!--  different build directory for eclipse, so running maven and clicking in IDE don't conflict -->
+        <!--  different build directory for eclipse, so running maven and
+				clicking in IDE don't conflict -->
         <directory>${project.basedir}/target-eclipse</directory>
         <pluginManagement>
           <plugins>
@@ -1613,26 +1632,30 @@
       <id>netbeans</id>
       <activation>
         <property>
-          <!-- You must add -Dnetbeans.ide as global option to the maven command for this to work
+          <!-- You must add -Dnetbeans.ide as global option to the
+					maven command for this to work
                Could not find any property existing when Netbeans was running the build -->
           <name>netbeans.ide</name>
         </property>
       </activation>
       <build>
-        <!--  different build directory for netbeans, so running maven and clicking in IDE don't conflict -->
+        <!--  different build directory for netbeans, so running maven
+				and clicking in IDE don't conflict -->
         <directory>${project.basedir}/target-netbeans</directory>
       </build>
     </profile>
     <profile>
       <id>intellij</id>
       <activation>
-        <!-- when intellij runs a build, this system property is already present -->
+        <!-- when intellij runs a build, this system property is already
+				present -->
         <property>
           <name>idea.version</name>
         </property>
       </activation>
       <build>
-        <!--  different build directory for intellij, so running maven and clicking in IDE don't conflict -->
+        <!--  different build directory for intellij, so running maven
+				and clicking in IDE don't conflict -->
         <directory>${project.basedir}/target-idea</directory>
       </build>
     </profile>
