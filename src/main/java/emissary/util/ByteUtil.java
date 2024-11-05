@@ -296,13 +296,14 @@ public class ByteUtil {
 		return ret;
 	}
 
+
 	/**
 	 * Scans a byte array looking for non-printable values.
 	 * 
 	 * @param bytes the bytes to be scanned.
 	 * @return whether or not there were non-printable values.
 	 */
-	public static boolean hasNonPrintableValues(final byte[] bytes) {
+	public static boolean hasNonPrintableValuesMain(final byte[] bytes) {
 		boolean badCharacters = false;
 
 		for (byte aByte : bytes) {
@@ -315,46 +316,150 @@ public class ByteUtil {
 		return badCharacters;
 	}
 
-	public static boolean shouldEncode(byte[] utf8bytes) {
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(utf8bytes);
-				BufferedReader br = new BufferedReader(new InputStreamReader(bais, StandardCharsets.UTF_8))) {
+    /**
+     * Scans a byte array looking for non-printable values.
+     * 
+     * @param utf8Bytes the bytes to be scanned.
+     * @return true if the byte array contains an invalid text character.
+     */
+    public static boolean hasNonPrintableValuesPR1001(final byte[] utf8Bytes) {
+        int i = 0;
+        while (i < utf8Bytes.length) {
+            int codePoint;
 
-			return br.readLine().codePoints().anyMatch(ByteUtil::shouldEncode);
+            // Check for single-byte characters
+            if (utf8Bytes[i] >= 0) {
+                codePoint = utf8Bytes[i];
+                i++;
+            } else {
+                // Check for multibyte characters
+                int numBytes = countUtf8Bytes(utf8Bytes[i]);
 
-		} catch (IOException ioe) {
-			// won't happen with byte array
-		}
+                if (numBytes == 2) {
+                    codePoint = decodeUtf8(utf8Bytes, i, 2);
+                    i += 2;
+                } else if (numBytes == 3) {
+                    codePoint = decodeUtf8(utf8Bytes, i, 3);
+                    i += 3;
+                } else if (numBytes == 4) {
+                    codePoint = decodeUtf8(utf8Bytes, i, 4);
+                    i += 4;
+                } else {
+                    // Invalid UTF-8 sequence
+                    return true;
+                }
+            }
 
-		return false;
-	}
+            // Check if the code point is printable
+            if (!isPrintable(codePoint)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	public static boolean shouldEncode(int codePoint) {
-		return shouldEscapeJavaControlCharacter(codePoint, JAVA_CONTROL_CHARACTERS_TO_LEAVE_UNESCAPED)
-				|| shouldEscapeInvalidCodePoint(codePoint) || shouldEscapeUnassignedCodePoint(codePoint);
+    /**
+     * Check the first bits of the byte to determine the number of bytes
+     *
+     * @param b byte to determine number of characters
+     * @return number of bytes in the byte sequence
+     */
+    private static int countUtf8Bytes(byte b) {
+        if ((b & 0x80) == 0) {
+            return 1;
+        } else if ((b & 0xE0) == 0xC0) {
+            return 2;
+        } else if ((b & 0xF0) == 0xE0) {
+            return 3;
+        } else if ((b & 0xF8) == 0xF0) {
+            return 4;
+        } else {
+            // Invalid UTF-8 sequence
+            return 0;
+        }
+    }
+
+    /**
+     * Decodes a UTF-8 character from the byte array.
+     *
+     * @param bytes byte array containing the utf-8 encoded data
+     * @param offset starting position in the byte array
+     * @param numBytes number of bytes to decode
+     *
+     * @return code point
+     */
+    private static int decodeUtf8(byte[] bytes, int offset, int numBytes) {
+        int codePoint = 0;
+        for (int i = 0; i < numBytes; i++) {
+            // shift the current value 6 bits to make room for the next 6 bits
+            codePoint <<= 0x6;
+            // add the lower 6 bits of the current byte to the codepoint. Only user the lower 6 bits.
+            codePoint |= bytes[offset + i] & 0x3f;
+        }
+        // remove any extra bits that were added during shifting
+        codePoint &= (0x1 << (0x6 * numBytes)) - 1;
+
+        return codePoint;
+    }
+
+    /**
+     * Check if the code point is a control character or surrogate pair
+     * <a href="https://en.wikipedia.org/wiki/Unicode_block">...</a>
+     *
+     * @param codePoint codePoint to check
+     *
+     * @return if code-point is a valid text character
+     */
+    private static boolean isPrintable(int codePoint) {
+
+        return codePoint >= 0x09 && codePoint <= 0x0D ||
+                codePoint >= 0x20 && codePoint <= 0x7E || // basic latin
+                codePoint >= 0xA0 && codePoint <= 0xD7FF || // extended characters
+                codePoint >= 0xE000 && codePoint <= 0xFFFD ||
+                codePoint >= 0x10000 && codePoint <= 0x10FFFF;
+    }
+
+
+//	public static boolean shouldEncode(byte[] utf8bytes) {
+//		try (ByteArrayInputStream bais = new ByteArrayInputStream(utf8bytes);
+//				BufferedReader br = new BufferedReader(new InputStreamReader(bais, StandardCharsets.UTF_8))) {
+//
+//			return br.readLine().codePoints().anyMatch(ByteUtil::shouldEncode);
+//
+//		} catch (IOException ioe) {
+//			// won't happen with byte array
+//		}
+//
+//		return false;
+//	}
+//
+//	public static boolean shouldEncode(int codePoint) {
 //		return shouldEscapeJavaControlCharacter(codePoint, JAVA_CONTROL_CHARACTERS_TO_LEAVE_UNESCAPED)
-//				|| shouldEscapeUnassignedCodePoint(codePoint);
-	}
-
-	public static final int[] JAVA_CONTROL_CHARACTERS_TO_LEAVE_UNESCAPED = { '\u0009', '\u0010', '\u0013' };
-
-	public static boolean shouldEscapeJavaControlCharacter(int codePoint, int[] controlCharactersToIgnore) {
-		for (int controlCharacterToIgnore : controlCharactersToIgnore) {
-			if (Character.isISOControl(controlCharacterToIgnore) && controlCharacterToIgnore == codePoint) {
-				return false; // don't escape this one even though it's a control
-			}
-		}
-
-		return Character.isISOControl(codePoint);
-	}
-
-	public static boolean shouldEscapeInvalidCodePoint(int codePoint) {
-		return Character.isValidCodePoint(codePoint);
-	}
-
-	public static boolean shouldEscapeUnassignedCodePoint(int codePoint) {
-		// TODO: figure out how to know if a codePoint is unassigned
-		return false;
-	}
+//				|| shouldEscapeInvalidCodePoint(codePoint) || shouldEscapeUnassignedCodePoint(codePoint);
+////		return shouldEscapeJavaControlCharacter(codePoint, JAVA_CONTROL_CHARACTERS_TO_LEAVE_UNESCAPED)
+////				|| shouldEscapeUnassignedCodePoint(codePoint);
+//	}
+//
+//	public static final int[] JAVA_CONTROL_CHARACTERS_TO_LEAVE_UNESCAPED = { '\u0009', '\u0010', '\u0013' };
+//
+//	public static boolean shouldEscapeJavaControlCharacter(int codePoint, int[] controlCharactersToIgnore) {
+//		for (int controlCharacterToIgnore : controlCharactersToIgnore) {
+//			if (Character.isISOControl(controlCharacterToIgnore) && controlCharacterToIgnore == codePoint) {
+//				return false; // don't escape this one even though it's a control
+//			}
+//		}
+//
+//		return Character.isISOControl(codePoint);
+//	}
+//
+//	public static boolean shouldEscapeInvalidCodePoint(int codePoint) {
+//		return Character.isValidCodePoint(codePoint);
+//	}
+//
+//	public static boolean shouldEscapeUnassignedCodePoint(int codePoint) {
+//		// TODO: figure out how to know if a codePoint is unassigned
+//		return false;
+//	}
 
 	/**
 	 * Creates a hex string of a sha256 hash for a byte[].
