@@ -1,28 +1,37 @@
 package emissary.unicode;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import emissary.core.IBaseDataObjectXmlCodecs;
+import emissary.util.ByteUtil;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.ctc.wstx.api.WstxInputProperties;
+import com.ctc.wstx.exc.WstxParsingException;
+import com.ctc.wstx.stax.WstxInputFactory;
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.text.BreakIterator;
 import com.ibm.icu.text.Normalizer2;
 import com.ibm.icu.text.UnicodeSet;
 import com.ibm.icu.text.UnicodeSetIterator;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import emissary.core.IBaseDataObjectXmlCodecs;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The purpose of this unit test is to compare various unicode escaping and identification strategies.
@@ -58,6 +67,7 @@ class UnicodeHandlingTest {
         Map<String, Object> collectorJavaControl = new HashMap<>();
         Map<String, Object> collectorDave = new HashMap<>();
         Map<String, Object> collectorFrank = new HashMap<>();
+        Map<String, Object> collectorLisa = new HashMap<>();
         Map<String, Object> collectorJSON = new HashMap<>();
         Map<String, Object> collectorXML = new HashMap<>();
 
@@ -70,6 +80,7 @@ class UnicodeHandlingTest {
             javaControlHandler(null, codepoint, collectorJavaControl);
             daveHandler(utf8bytes, codepoint, collectorDave);
             frankHandler(utf8bytes, codepoint, collectorFrank);
+            lisaHandler(utf8bytes, codepoint, collectorLisa);
             jsonStandardHandler(utf8bytes, codepoint, collectorJSON);
             xmlStandardHandler(utf8bytes, codepoint, collectorXML);
 
@@ -78,6 +89,10 @@ class UnicodeHandlingTest {
         displayStats(collectorJavaControl);
         displayStats(collectorICU4J);
         displayStats(collectorDave);
+        displayStats(collectorFrank);
+        displayStats(collectorLisa);
+        displayStats(collectorXML);
+        displayStats(collectorJSON);
 
     }
 
@@ -159,16 +174,36 @@ class UnicodeHandlingTest {
     void frankHandler(byte[] utf8bytes, int codepoint, Map<String, Object> collector) {
         collector.put(COLLECTOR_KEY, "FRANK");
         incrementCount(collector, TOTAL_KEY);
+
+        if (ByteUtil.hasNonPrintableValuesPR1001(utf8bytes)) {
+            incrementCount(collector, ESCAPE_KEY);
+            addToCodePointList(collector, codepoint);
+        }
+
     }
+
+    void lisaHandler(byte[] utf8bytes, int codepoint, Map<String, Object> collector) {
+        collector.put(COLLECTOR_KEY, "LISA");
+        incrementCount(collector, TOTAL_KEY);
+
+        if (!Character.isValidCodePoint(codepoint)) {
+            incrementCount(collector, ESCAPE_KEY);
+            addToCodePointList(collector, codepoint);
+        }
+
+    }
+
 
     void jsonStandardHandler(byte[] utf8bytes, int codepoint, Map<String, Object> collector) {
         collector.put(COLLECTOR_KEY, "JSON");
         incrementCount(collector, TOTAL_KEY);
     }
 
+
     void xmlStandardHandler(byte[] utf8bytes, int codepoint, Map<String, Object> collector) {
         collector.put(COLLECTOR_KEY, "XML");
         incrementCount(collector, TOTAL_KEY);
+
     }
 
 
@@ -220,31 +255,34 @@ class UnicodeHandlingTest {
 
     String prettyFormatList(Object list) {
         @SuppressWarnings("unchecked")
-        List<Integer> intList = (List<Integer>) list;
-        return intList.stream().map(i -> i.toString()).collect(Collectors.joining(", "));
+        List<Integer> codepointList = (List<Integer>) list;
+        if (codepointList.size() > 1000) {
+            return "greater than 1000";
+        }
+        return codepointList.stream().map(i -> i.toString()).collect(Collectors.joining(", "));
 
     }
 
 
     /**
-     * The string returned from this method contains a single emoji (one graphical unit) consisting of five Unicode
-     * scalar values.
+     * The string returned from this method contains a single emoji (one graphical unit) consisting of five Unicode scalar
+     * values.
      * <p>
      * First, there’s a base character that means a person face palming. By default, the person would have a cartoonish
      * yellow color.
      * <p>
-     * The next character is an emoji skintone modifier the changes the color of the person’s skin (and, in practice,
-     * also the color of the person’s hair). By default, the gender of the person is undefined, and e.g. Apple defaults
-     * to what they consider a male appearance and e.g. Google defaults to what they consider a female appearance.
+     * The next character is an emoji skintone modifier the changes the color of the person’s skin (and, in practice, also
+     * the color of the person’s hair). By default, the gender of the person is undefined, and e.g. Apple defaults to what
+     * they consider a male appearance and e.g. Google defaults to what they consider a female appearance.
      * <p>
      * The next two scalar values pick a male-typical appearance specifically regardless of font and vendor. Instead of
-     * being an emoji-specific modifier like the skin tone, the gender specification uses an emoji-predating gender
-     * symbol (MALE SIGN) explicitly ligated using the ZERO WIDTH JOINER with the (skin-toned) face-palming person.
-     * (Whether it is a good or a bad idea that the skin tone and gender specifications use different mechanisms is out
-     * of the scope of this post.)
+     * being an emoji-specific modifier like the skin tone, the gender specification uses an emoji-predating gender symbol
+     * (MALE SIGN) explicitly ligated using the ZERO WIDTH JOINER with the (skin-toned) face-palming person. (Whether it is
+     * a good or a bad idea that the skin tone and gender specifications use different mechanisms is out of the scope of
+     * this post.)
      * <p>
-     * Finally, VARIATION SELECTOR-16 makes it explicit that we want a multicolor emoji rendering instead of a
-     * monochrome dingbat rendering.
+     * Finally, VARIATION SELECTOR-16 makes it explicit that we want a multicolor emoji rendering instead of a monochrome
+     * dingbat rendering.
      * 
      * @See {@link <a href="https://hsivonen.fi/string-length/">https://hsivonen.fi/string-length/</a>}
      * 
@@ -307,5 +345,95 @@ class UnicodeHandlingTest {
         return facePalmDude;
 
     }
+
+
+    @Test
+    void reproduceXMLParsingSurrogatePairsException() {
+        // (if no emoji font installed, the last character should be displayed as santa claus emoji U+1F385)
+        final String inputElement = "<value>Merry Christmas &#55356;&#57221;</value>";
+        WstxInputFactory wstxInputFactory = new WstxInputFactory();
+        wstxInputFactory.configureForSpeed();
+
+        WstxParsingException thrown = assertThrows(WstxParsingException.class,
+                () -> {
+
+                    doTheParsing(wstxInputFactory, inputElement, "");
+
+                });
+
+        assertTrue(thrown.getMessage().contains("Illegal character entity: expansion character"));
+
+    }
+
+    @Disabled
+    @Test
+    /**
+     * @See <a href= "https://github.com/FasterXML/woodstox/pull/174/">https://github.com/FasterXML/woodstox/pull/174/</a>
+     * @throws XMLStreamException
+     */
+    void testMoreXmlSurrogatePairs() throws XMLStreamException {
+
+        WstxInputFactory wstxInputFactory = new WstxInputFactory();
+        wstxInputFactory.configureForSpeed();
+        wstxInputFactory.setProperty(WstxInputProperties.P_ALLOW_SURROGATE_PAIR_ENTITIES, true);
+        int assertions = 0;
+
+        Map<String, String> validSurrogatePairs = getValidSurrogateDataSet();
+
+        for (Entry<String, String> xmlExp : validSurrogatePairs.entrySet()) {
+            doTheParsing(wstxInputFactory, xmlExp.getKey(), xmlExp.getValue());
+            assertions++;
+        }
+        assertEquals(validSurrogatePairs.size(), assertions, "Expected to pass all the test cases.");
+
+    }
+
+
+    void doTheParsing(WstxInputFactory wstxInputFactory, String inputElement, String expected) throws XMLStreamException {
+        final ByteArrayInputStream is = new ByteArrayInputStream(inputElement.getBytes(StandardCharsets.UTF_8));
+
+        final XMLStreamReader reader = wstxInputFactory.createXMLStreamReader(is);
+
+        assertEquals(XMLStreamConstants.START_ELEMENT, reader.next());
+        assertEquals(XMLStreamConstants.CHARACTERS, reader.next());
+
+        StringBuffer sb = new StringBuffer(reader.getText());
+
+        while (reader.next() == XMLStreamConstants.CHARACTERS) {
+            sb.append(reader.getText());
+        }
+
+        String result = sb.toString();
+        assertEquals(expected, result);
+
+
+        reader.close();
+    }
+
+
+    Map<String, String> getValidSurrogateDataSet() {
+        final Map<String, String> xmlWithSurrogatePairs = new HashMap<String, String>();
+        // Numeric surrogate pairs
+        xmlWithSurrogatePairs.put("<root>surrogate pair: &#55356;&#57221;.</root>",
+                "surrogate pair: \uD83C\uDF85.");
+        // Hex and numeric surrogate pairs
+        xmlWithSurrogatePairs.put("<root>surrogate pair: &#xD83C;&#57221;.</root>",
+                "surrogate pair: \uD83C\uDF85.");
+        // Numeric and hex surrogate pairs
+        xmlWithSurrogatePairs.put("<root>surrogate pair: &#55356;&#xDF85;.</root>",
+                "surrogate pair: \uD83C\uDF85.");
+        // Hex surrogate pairs
+        xmlWithSurrogatePairs.put("<root>surrogate pair: &#xD83C;&#xDF85;.</root>",
+                "surrogate pair: \uD83C\uDF85.");
+        // Two surrogate pairs
+        xmlWithSurrogatePairs.put("<root>surrogate pair: &#55356;&#57221;&#55356;&#57220;.</root>",
+                "surrogate pair: \uD83C\uDF85\uD83C\uDF84.");
+        // Surrogate pair and simple entity
+        xmlWithSurrogatePairs.put("<root>surrogate pair: &#55356;&#57221;&#8482;.</root>",
+                "surrogate pair: \uD83C\uDF85\u2122.");
+
+        return xmlWithSurrogatePairs;
+    }
+
 
 }
