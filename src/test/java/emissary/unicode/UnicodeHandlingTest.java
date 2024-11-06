@@ -11,7 +11,6 @@ import com.ibm.icu.text.BreakIterator;
 import com.ibm.icu.text.Normalizer2;
 import com.ibm.icu.text.UnicodeSet;
 import com.ibm.icu.text.UnicodeSetIterator;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -365,23 +365,31 @@ class UnicodeHandlingTest {
 
     }
 
-    @Disabled
-    @Test
+
     /**
-     * @See <a href= "https://github.com/FasterXML/woodstox/pull/174/">https://github.com/FasterXML/woodstox/pull/174/</a>
+     * Test to use woodstox to parse xml containing surrogate pair unicode characters.
+     * 
+     * @See <a href="https://github.com/FasterXML/woodstox/pull/174/">https://github.com/FasterXML/woodstox/pull/174/</a>
+     * 
      * @throws XMLStreamException
      */
+    @Test
     void testMoreXmlSurrogatePairs() throws XMLStreamException {
+        XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
+        xmlInputFactory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, Boolean.TRUE);
+        xmlInputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, Boolean.TRUE);
+        xmlInputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.FALSE);
+        xmlInputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
+        xmlInputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
+        xmlInputFactory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
+        xmlInputFactory.setProperty(WstxInputProperties.P_ALLOW_SURROGATE_PAIR_ENTITIES, Boolean.TRUE);
 
-        WstxInputFactory wstxInputFactory = new WstxInputFactory();
-        wstxInputFactory.configureForSpeed();
-        wstxInputFactory.setProperty(WstxInputProperties.P_ALLOW_SURROGATE_PAIR_ENTITIES, true);
         int assertions = 0;
 
         Map<String, String> validSurrogatePairs = getValidSurrogateDataSet();
 
         for (Entry<String, String> xmlExp : validSurrogatePairs.entrySet()) {
-            doTheParsing(wstxInputFactory, xmlExp.getKey(), xmlExp.getValue());
+            doTheParsing(xmlInputFactory, xmlExp.getKey(), xmlExp.getValue());
             assertions++;
         }
         assertEquals(validSurrogatePairs.size(), assertions, "Expected to pass all the test cases.");
@@ -389,7 +397,7 @@ class UnicodeHandlingTest {
     }
 
 
-    void doTheParsing(WstxInputFactory wstxInputFactory, String inputElement, String expected) throws XMLStreamException {
+    void doTheParsing(XMLInputFactory wstxInputFactory, String inputElement, String expected) throws XMLStreamException {
         final ByteArrayInputStream is = new ByteArrayInputStream(inputElement.getBytes(StandardCharsets.UTF_8));
 
         final XMLStreamReader reader = wstxInputFactory.createXMLStreamReader(is);
