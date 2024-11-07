@@ -1,19 +1,10 @@
 package emissary.unicode;
 
-import emissary.core.IBaseDataObjectXmlCodecs;
-import emissary.util.ByteUtil;
-
-import com.ctc.wstx.api.WstxInputProperties;
-import com.ctc.wstx.exc.WstxParsingException;
-import com.ctc.wstx.stax.WstxInputFactory;
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.text.BreakIterator;
-import com.ibm.icu.text.Normalizer2;
-import com.ibm.icu.text.UnicodeSet;
-import com.ibm.icu.text.UnicodeSetIterator;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -23,15 +14,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.ctc.wstx.api.WstxInputProperties;
+import com.ctc.wstx.exc.WstxParsingException;
+import com.ctc.wstx.stax.WstxInputFactory;
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.text.BreakIterator;
+import com.ibm.icu.text.Normalizer2;
+import com.ibm.icu.text.UnicodeSet;
+import com.ibm.icu.text.UnicodeSetIterator;
+
+import emissary.core.IBaseDataObjectXmlCodecs;
+import emissary.util.ByteUtil;
 
 /**
  * The purpose of this unit test is to compare various unicode escaping and identification strategies.
@@ -97,22 +100,7 @@ class UnicodeHandlingTest {
     }
 
 
-    /**
-     * If you were to put a cursor beside this String, how many times would you have to press right (or left) arrow to
-     * traverse it?
-     * 
-     * @param text to traverse
-     * @return count of arrow key presses
-     */
-    int graphemeCount(String text) {
-        BreakIterator it = BreakIterator.getCharacterInstance();
-        it.setText(text);
-        int count = 0;
-        while (it.next() != BreakIterator.DONE) {
-            count++;
-        }
-        return count;
-    }
+    
 
 
     String createSomeData(int codePoint, boolean moreThanOnce, String addThisPrefix, String addInTheMiddle, String addThisSuffix) {
@@ -265,24 +253,24 @@ class UnicodeHandlingTest {
 
 
     /**
-     * The string returned from this method contains a single emoji (one graphical unit) consisting of five Unicode scalar
-     * values.
+     * The string returned from this method contains a single emoji (one graphical unit) consisting of five Unicode
+     * scalar values.
      * <p>
      * First, there’s a base character that means a person face palming. By default, the person would have a cartoonish
      * yellow color.
      * <p>
-     * The next character is an emoji skintone modifier the changes the color of the person’s skin (and, in practice, also
-     * the color of the person’s hair). By default, the gender of the person is undefined, and e.g. Apple defaults to what
-     * they consider a male appearance and e.g. Google defaults to what they consider a female appearance.
+     * The next character is an emoji skintone modifier the changes the color of the person’s skin (and, in practice,
+     * also the color of the person’s hair). By default, the gender of the person is undefined, and e.g. Apple defaults
+     * to what they consider a male appearance and e.g. Google defaults to what they consider a female appearance.
      * <p>
      * The next two scalar values pick a male-typical appearance specifically regardless of font and vendor. Instead of
-     * being an emoji-specific modifier like the skin tone, the gender specification uses an emoji-predating gender symbol
-     * (MALE SIGN) explicitly ligated using the ZERO WIDTH JOINER with the (skin-toned) face-palming person. (Whether it is
-     * a good or a bad idea that the skin tone and gender specifications use different mechanisms is out of the scope of
-     * this post.)
+     * being an emoji-specific modifier like the skin tone, the gender specification uses an emoji-predating gender
+     * symbol (MALE SIGN) explicitly ligated using the ZERO WIDTH JOINER with the (skin-toned) face-palming person.
+     * (Whether it is a good or a bad idea that the skin tone and gender specifications use different mechanisms is out
+     * of the scope of this post.)
      * <p>
-     * Finally, VARIATION SELECTOR-16 makes it explicit that we want a multicolor emoji rendering instead of a monochrome
-     * dingbat rendering.
+     * Finally, VARIATION SELECTOR-16 makes it explicit that we want a multicolor emoji rendering instead of a
+     * monochrome dingbat rendering.
      * 
      * @See {@link <a href="https://hsivonen.fi/string-length/">https://hsivonen.fi/string-length/</a>}
      * 
@@ -345,6 +333,23 @@ class UnicodeHandlingTest {
         return facePalmDude;
 
     }
+    
+    /**
+     * If you were to put a cursor beside this String, how many times would you have to press right (or left) arrow to
+     * traverse it?
+     * 
+     * @param text to traverse
+     * @return count of arrow key presses
+     */
+    int graphemeCount(String text) {
+        BreakIterator it = BreakIterator.getCharacterInstance();
+        it.setText(text);
+        int count = 0;
+        while (it.next() != BreakIterator.DONE) {
+            count++;
+        }
+        return count;
+    }
 
 
     @Test
@@ -357,7 +362,7 @@ class UnicodeHandlingTest {
         WstxParsingException thrown = assertThrows(WstxParsingException.class,
                 () -> {
 
-                    doTheParsing(wstxInputFactory, inputElement, "");
+                    doTheParsing(wstxInputFactory, inputElement, "expecting exception thrown");
 
                 });
 
@@ -369,20 +374,56 @@ class UnicodeHandlingTest {
     /**
      * Test to use woodstox to parse xml containing surrogate pair unicode characters.
      * 
-     * @See <a href="https://github.com/FasterXML/woodstox/pull/174/">https://github.com/FasterXML/woodstox/pull/174/</a>
+     * @See <a href=
+     *      "https://github.com/FasterXML/woodstox/pull/174/">https://github.com/FasterXML/woodstox/pull/174/</a>
      * 
      * @throws XMLStreamException
      */
     @Test
-    void testMoreXmlSurrogatePairs() throws XMLStreamException {
-        XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
-        xmlInputFactory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, Boolean.TRUE);
-        xmlInputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, Boolean.TRUE);
-        xmlInputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.FALSE);
-        xmlInputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
-        xmlInputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
-        xmlInputFactory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
-        xmlInputFactory.setProperty(WstxInputProperties.P_ALLOW_SURROGATE_PAIR_ENTITIES, Boolean.TRUE);
+    void testXmlInValidSurrogatePairs() {
+        XMLInputFactory xmlInputFactory = getXMLInputFactoryForSurrogatePairs();
+
+
+        Map<String, String> inValidSurrogatePairs = getInvalidSurrogateDataSet();
+
+        int checks = 0;
+        for (Entry<String, String> xmlExp : inValidSurrogatePairs.entrySet()) {
+
+            String invalidSurrogatePair = xmlExp.getKey();
+
+            Exception thrown = assertThrows(Exception.class,
+                    () -> {
+
+                        doTheParsing(xmlInputFactory, xmlExp.getKey(), "expecting exception thrown");
+
+                    });
+
+            String expectedErrorPhrase = xmlExp.getValue();
+
+            if (!thrown.getMessage().contains(expectedErrorPhrase)) {
+                fail(String.format(
+                        "Expected an exception starting from phrase: '%s' for invalid surrogate test case: '%s', but the message was: '%s'",
+                        expectedErrorPhrase,
+                        invalidSurrogatePair,
+                        thrown.getMessage()));
+            }
+            checks++;
+        }
+        assertEquals(inValidSurrogatePairs.size(), checks, "Expected to check all the test cases.");
+
+    }
+
+    /**
+     * Test to use woodstox to parse xml containing surrogate pair unicode characters.
+     * 
+     * @See <a href=
+     *      "https://github.com/FasterXML/woodstox/pull/174/">https://github.com/FasterXML/woodstox/pull/174/</a>
+     * 
+     * @throws XMLStreamException
+     */
+    @Test
+    void testXmlValidSurrogatePairs() throws XMLStreamException {
+        XMLInputFactory xmlInputFactory = getXMLInputFactoryForSurrogatePairs();
 
         int assertions = 0;
 
@@ -441,6 +482,33 @@ class UnicodeHandlingTest {
                 "surrogate pair: \uD83C\uDF85\u2122.");
 
         return xmlWithSurrogatePairs;
+    }
+
+    Map<String, String> getInvalidSurrogateDataSet() {
+        final Map<String, String> invalidSurrogatePairsAndExpectedErrors = new HashMap<String, String>();
+        // Invalid pair
+        invalidSurrogatePairsAndExpectedErrors.put("<root>surrogate pair: &#55356;&#5722;.</root>", "Invalid surrogate pair");
+        // No pair
+        invalidSurrogatePairsAndExpectedErrors.put("<root>surrogate pair: &#55356;.</root>", "Cannot find surrogate pair");
+        // Low surrogate as first
+        invalidSurrogatePairsAndExpectedErrors.put("<root>surrogate pair: &#57221;&#55356;.</root>", "Illegal character entity");
+        // Unclosed second entity
+        invalidSurrogatePairsAndExpectedErrors.put("<root>surrogate pair: &#55356;&#553</root>", "Cannot find surrogate pair");
+
+        return invalidSurrogatePairsAndExpectedErrors;
+    }
+
+
+    XMLInputFactory getXMLInputFactoryForSurrogatePairs() {
+        XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
+        xmlInputFactory.setProperty(XMLInputFactory.IS_NAMESPACE_AWARE, Boolean.TRUE);
+        xmlInputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, Boolean.TRUE);
+        xmlInputFactory.setProperty(XMLInputFactory.IS_COALESCING, Boolean.FALSE);
+        xmlInputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
+        xmlInputFactory.setProperty(XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.TRUE);
+        xmlInputFactory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
+        xmlInputFactory.setProperty(WstxInputProperties.P_ALLOW_SURROGATE_PAIR_ENTITIES, Boolean.TRUE);
+        return xmlInputFactory;
     }
 
 
